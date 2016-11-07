@@ -1,0 +1,179 @@
+#include<iostream>
+#include<Windows.h>
+#include<vector>
+#include<algorithm>
+#include<map>
+//struct MapNode
+//{
+//	int row;//地图坐标的行
+//	int col;//地图坐标的列
+//	bool hasWalked;//代表地图上的这点有没有走过，1是走过，0是没走过
+//	MapNode(int x, int y, bool flag) :row(x), col(y)
+//	{
+//		hasWalked = flag;
+//	}
+//};
+class Maze{
+private:
+	struct MazeNode//迷宫所走结点的结构
+	{
+		int row = 0;
+		int col = 0;
+		MazeNode() = default;
+		MazeNode(int x, int y) :row(x), col(y){}
+	};
+	std::map<std::pair<int, int>, int>map;//保存整个迷宫
+	std::vector<MazeNode>path;//用来保存路径
+	MazeNode currNode;//当前结点
+	int dir;//代表方向；1是向上，2是向下，3是向左，4是向右
+public:
+	void Pos(short x, short y)//定位光标
+	{
+		COORD pos;
+		pos.X = x;
+		pos.Y = y;
+		HANDLE hOutPut = GetStdHandle(STD_OUTPUT_HANDLE);
+		SetConsoleCursorPosition(hOutPut, pos);
+	}
+	void CreateMazeMap()//创建并打印地图
+	{
+		for (int i = 0; i < 20; i += 2)//地图为0-18,0-9;可以使用的是2-16,1-8;
+		{
+			for (int j = 0; j < 10; j++)//统一设置地图，其中1代表障碍，0代表可走通道
+			{
+				if (i == 0 || i == 18 || j == 0 || j == 9)
+					map[{i, j}] = 1;
+				else
+					map[{i, j}] = 0;
+			}
+
+		}
+		
+		
+		for (auto it = map.begin(); it != map.end(); it++)//将迷宫打印出来
+		{
+			Pos(it->first.first, it->first.second);
+			if (map[{it->first.first, it->first.second}] == 1) std::cout << "■";
+			else std::cout << "□";
+		}
+	}
+	void CreateBlock()
+	{
+		std::cout << std:: endl;
+		std::cout << "是否使用系统自带迷宫（Y/N）?" << std::endl;
+		char ch;
+		std::cin >> ch;
+		if (ch == 'Y')
+		{
+			map[{2, 8}] = 1;//设置迷宫内的障碍
+			map[{4, 4}] = 1; map[{4, 6}] = 1; map[{4, 7}] = 1;
+			map[{6, 1}] = 1; map[{6, 2}] = 1; map[{6, 4}] = 1; map[{6, 7}] = 1;
+			map[{8, 4}] = 1; map[{8, 5}] = 1; map[{8, 7}] = 1;
+			map[{10, 3}] = 1;
+			map[{12, 3}] = 1; map[{12, 6}] = 1; map[{12, 7}] = 1;
+			map[{14, 1}] = 1; map[{14, 2}] = 1; map[{14, 7}] = 1;
+		}
+		else
+		{
+			std::cout << "		请输入迷宫内的障碍： 1为有障碍，0为无障碍(从上往下输入)" << std::endl;
+			int input = 0;
+			for (int i = 2; i < 18; i += 2)
+			{
+				for (int j = 1; j < 9; j++)
+				{
+					Pos(i, j);
+					std::cin >> input;
+					map[{i, j}] = input;
+				}
+			}
+		}
+		for (auto it = map.begin(); it != map.end(); it++)//将迷宫打印出来
+		{
+			Pos(it->first.first, it->first.second);
+			if (map[{it->first.first, it->first.second}] == 1) std::cout << "■";
+			else std::cout << "□";
+		}
+	}
+	bool MoveMazeNode()//开始往下一步走
+	{
+		if (dir == 4 && map[{currNode.row, currNode.col - 1}] == 0)//往上
+		{
+			map[{currNode.row, currNode.col - 1}] = 1;//把走过的地图标记设为1，让后来不再走这个通道
+			MazeNode temp(currNode.row, currNode.col - 1);
+			currNode = temp;//将下一个点设为当前位置
+			path.push_back(currNode);//并将点压入path中
+			return true;//返回true，代表此方向走的通
+		}
+		else if (dir == 1 && map[{currNode.row, currNode.col + 1}] == 0)//往下
+		{
+			map[{currNode.row, currNode.col + 1}] = 1;
+			MazeNode temp(currNode.row, currNode.col + 1);
+			currNode = temp;
+			path.push_back(currNode);
+			return true;
+		}
+		else if (dir == 3 && map[{currNode.row - 2, currNode.col }] == 0)//往左
+		{
+			map[{currNode.row - 2, currNode.col }] = 1;
+			MazeNode temp(currNode.row - 2, currNode.col);
+			currNode = temp;
+			path.push_back(currNode);
+			return true;
+		}
+		else if (dir == 2 && map[{currNode.row + 2, currNode.col}] == 0)//往右
+		{
+			map[{currNode.row + 2, currNode.col }] = 1;
+			MazeNode temp(currNode.row + 2, currNode.col);
+			currNode = temp;
+			path.push_back(currNode);
+			return true;
+		}
+		else return false;//否则走不通
+	}
+	void GamesStart()//游戏开始
+	{
+		currNode.row = 2;//设计迷宫的出发点
+		currNode.col = 1;
+		map[{2, 1}] = 1;//并将此点置为1，后来不再走此点
+		path.push_back(currNode);
+		while (currNode.row != 16 || currNode.col != 8)//(16,8)是迷宫终点，一直循环，直至到（16，8）点
+		{
+			dir = 1;//默认往下走
+			while (dir < 5)
+			{
+				if (MoveMazeNode() == false)//走不通，则换个方向走，dir+1;
+					dir++;
+				else
+					break;
+			}
+			if (dir == 5)//当四个方向都走不通，则当前块陷入绝境，即从路径中删除，从路径的下一点开始
+			{
+				path.pop_back();
+				currNode = path.back();
+			}
+		}
+		Pos(24, 4);
+		std::cout << "欢迎下次使用!" << std::endl;
+	}
+	void printPath()//打印地图
+	{
+		for (int i = 0; i < path.size(); i++)
+		{
+			Pos(path[i].row, path[i].col);
+			std::cout << "☆";
+		}
+	}
+	void StartImage()
+	{
+		std::cout << std::endl;
+		std::cout << "			欢迎来到迷宫求解程序！" << std::endl;
+		std::cout << std::endl;
+		std::cout << std::endl;
+		std::cout << "使用说明：用户可选择使用系统自动迷宫或者自己输入迷宫;\n\n当输入完毕后，会出现一条用☆标记的求解路径" << std::endl;
+		std::cout << std::endl;
+		std::cout << "		编译于川大望江工学图书馆——SYJ   2016年11月7日" << std::endl;
+		std::cout << std::endl;
+		system("pause");
+		system("cls");
+	}
+};
