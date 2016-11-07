@@ -1,0 +1,11 @@
+#include"maze.h"
+int main()
+{
+	Maze ma;
+	ma.StartImage();
+	ma.CreateMazeMap();
+	ma.CreateBlock();
+	ma.GamesStart();
+	ma.printPath();
+	return 0;
+}
